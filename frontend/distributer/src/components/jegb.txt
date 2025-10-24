@@ -1,0 +1,629 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Loader from "./Loader";
+import apiClient, { apiEndpoints } from "./Apis";
+
+const CreateBureau = () => {
+  const navigate = useNavigate();
+  const distributorId = localStorage.getItem("distributorId");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const distributorId = localStorage.getItem("distributorId");
+  const [formData, setFormData] = useState({
+    BureauName: "",
+    OwnerName: "",
+    creatingDate: "",
+    countryCode: "",
+    mobileNumber: "",
+    Email: "",
+    password: "",
+    About: "",
+    location: "",
+    paymentStatus: 0,
+    bureauId: "",
+    distributorId: distributorId,
+    officeAddresses: [
+      {
+        BranchManagerName: "",
+        ContactDetails: "",
+        HouseFlatNo: "",
+        Street: "",
+        City: "",
+        District: "",
+        State: "",
+        Country: "",
+        GoogleMapLink: "",
+      },
+    ],
+    // Social media, services, and testimonials
+    socialMediaLinks: [
+      { title: "", url: "" }
+    ],
+    services: [
+      { name: "", description: "" }
+    ],
+    testimonials: [
+      { email: "", name: "", feedback: "" }
+    ],
+    // New image fields
+    ownerImage: null,
+    welcomeImage: null,
+    urlImage: null,
+    sliderImages: [],
+    successMarriageImages: [],
+    termsAccepted: false,
+    documents: [],
+  });
+  
+  const [loading, setLoading] = useState(false);
+  // Preview states for images
+  const [ownerImagePreview, setOwnerImagePreview] = useState(null);
+  const [welcomeImagePreview, setWelcomeImagePreview] = useState(null);
+  const [urlImagePreview, setUrlImagePreview] = useState(null);
+  const [sliderImagePreviews, setSliderImagePreviews] = useState([]);
+  const [successMarriageImagePreviews, setSuccessMarriageImagePreviews] = useState([]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleAddressChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedAddresses = [...formData.officeAddresses];
+    updatedAddresses[index][name] = value;
+    setFormData({ ...formData, officeAddresses: updatedAddresses });
+  };
+
+  // Handle social media links change
+  const handleSocialMediaChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedLinks = [...formData.socialMediaLinks];
+    updatedLinks[index][name] = value;
+    setFormData({ ...formData, socialMediaLinks: updatedLinks });
+  };
+
+  // Handle services change
+  const handleServiceChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedServices = [...formData.services];
+    updatedServices[index][name] = value;
+    setFormData({ ...formData, services: updatedServices });
+  };
+
+  // // Handle testimonials change
+  // const handleTestimonialChange = (index, e) => {
+  //   const { name, value } = e.target;
+  //   const updatedTestimonials = [...formData.testimonials];
+  //   updatedTestimonials[index][name] = value;
+  //   setFormData({ ...formData, testimonials: updatedTestimonials });
+  // };
+
+  // Handle single image upload
+  const handleImageUpload = (e, imageType) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Create URL for preview
+    const previewUrl = URL.createObjectURL(file);
+
+    // Update state based on image type
+    switch (imageType) {
+      case 'ownerImage':
+        setFormData({ ...formData, ownerImage: file });
+        setOwnerImagePreview(previewUrl);
+        break;
+      case 'welcomeImage':
+        setFormData({ ...formData, welcomeImage: file });
+        setWelcomeImagePreview(previewUrl);
+        break;
+      case 'urlImage':
+        setFormData({ ...formData, urlImage: file });
+        setUrlImagePreview(previewUrl);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle multiple images upload
+  const handleMultipleImagesUpload = (e, imageType) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Create preview URLs
+    const previewUrls = files.map(file => URL.createObjectURL(file));
+
+    // Update state based on image type
+    switch (imageType) {
+      case 'sliderImages':
+        // Check maximum limit
+        if (formData.sliderImages.length + files.length > 10) {
+          alert("Maximum 10 slider images allowed");
+          return;
+        }
+        setFormData({ 
+          ...formData, 
+          sliderImages: [...formData.sliderImages, ...files] 
+        });
+        setSliderImagePreviews([...sliderImagePreviews, ...previewUrls]);
+        break;
+      case 'successMarriageImages':
+        // Check maximum limit
+        if (formData.successMarriageImages.length + files.length > 20) {
+          alert("Maximum 20 success marriage images allowed");
+          return;
+        }
+        setFormData({ 
+          ...formData, 
+          successMarriageImages: [...formData.successMarriageImages, ...files] 
+        });
+        setSuccessMarriageImagePreviews([...successMarriageImagePreviews, ...previewUrls]);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Remove specific image from multiple images
+  const removeImage = (index, imageType) => {
+    if (imageType === 'sliderImages') {
+      const updatedImages = formData.sliderImages.filter((_, i) => i !== index);
+      const updatedPreviews = sliderImagePreviews.filter((_, i) => i !== index);
+      setFormData({ ...formData, sliderImages: updatedImages });
+      setSliderImagePreviews(updatedPreviews);
+    } else if (imageType === 'successMarriageImages') {
+      const updatedImages = formData.successMarriageImages.filter((_, i) => i !== index);
+      const updatedPreviews = successMarriageImagePreviews.filter((_, i) => i !== index);
+      setFormData({ ...formData, successMarriageImages: updatedImages });
+      setSuccessMarriageImagePreviews(updatedPreviews);
+    }
+  };
+
+  const addLocation = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      officeAddresses: [
+        ...prevData.officeAddresses,
+        {
+          branchManager: "",
+          contactDetails: "",
+          houseFlatNo: "",
+          street: "",
+          city: "",
+          district: "",
+          state: "",
+          country: "",
+          googleMapLink: "",
+        },
+      ],
+    }));
+  };
+
+  const removeLocation = (index) => {
+    setFormData((prevData) => {
+      const updatedAddresses = prevData.officeAddresses.filter((_, i) => i !== index);
+      return { ...prevData, officeAddresses: updatedAddresses };
+    });
+  };
+
+  // Add social media link
+  const addSocialMedia = () => {
+    if (formData.socialMediaLinks.length < 10) {
+      setFormData((prevData) => ({
+        ...prevData,
+        socialMediaLinks: [
+          ...prevData.socialMediaLinks,
+          { title: "", url: "" }
+        ],
+      }));
+    } else {
+      alert("Maximum 10 Youtube links allowed");
+    }
+  };
+
+  // Remove social media link
+  const removeSocialMedia = (index) => {
+    setFormData((prevData) => {
+      const updatedLinks = prevData.socialMediaLinks.filter((_, i) => i !== index);
+      return { ...prevData, socialMediaLinks: updatedLinks };
+    });
+  };
+
+  // Add service
+  const addService = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      services: [
+        ...prevData.services,
+        { name: "", description: "" }
+      ],
+    }));
+  };
+
+  // Remove service
+  const removeService = (index) => {
+    setFormData((prevData) => {
+      const updatedServices = prevData.services.filter((_, i) => i !== index);
+      return { ...prevData, services: updatedServices };
+    });
+  };
+
+ 
+
+  const handleFileChange = (e) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      documents: e.target.files,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const formDataObj = new FormData();
+      
+      // Handle regular fields
+      const regularFields = { 
+        bureauName: formData.bureauName,
+        ownerName: formData.ownerName,
+        creatingDate: formData.creatingDate,
+        countryCode: formData.countryCode,
+        mobileNumber: formData.mobileNumber,
+        email: formData.email,
+        password: formData.password,
+        about: formData.about,
+        location: formData.location,
+        paymentStatus: formData.paymentStatus,
+        bureauId: formData.bureauId,
+        distributorId: formData.distributorId,
+        officeAddresses: formData.officeAddresses,
+        socialMediaLinks: formData.socialMediaLinks,
+        services: formData.services,
+        // testimonials: formData.testimonials,
+        termsAccepted: formData.termsAccepted
+      };
+      
+      // Append JSON data
+      formDataObj.append('data', JSON.stringify(regularFields));
+      
+      // Append documents
+      if (formData.documents) {
+        Array.from(formData.documents).forEach((file) => {
+          formDataObj.append("documents", file);
+        });
+      }
+      
+      // Append individual images
+      if (formData.ownerImage) {
+        formDataObj.append("ownerImage", formData.ownerImage);
+      }
+      
+      if (formData.welcomeImage) {
+        formDataObj.append("welcomeImage", formData.welcomeImage);
+      }
+      
+      if (formData.urlImage) {
+        formDataObj.append("urlImage", formData.urlImage);
+      }
+      
+      // Append slider images
+      formData.sliderImages.forEach((image, index) => {
+        formDataObj.append(`sliderImages[${index}]`, image);
+      });
+      
+      // Append success marriage images
+      formData.successMarriageImages.forEach((image, index) => {
+        formDataObj.append(`successMarriageImages[${index}]`, image);
+      });
+
+      const response = await apiClient.post(apiEndpoints.CreateBureau, formDataObj);
+      if (response.status === 200) {
+        alert("Bureau created successfully!");
+        navigate("/bureau/manage");
+      } else {
+        alert(response.data?.message || "Something went wrong. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Network error or CORS issue. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Existing helper functions (handleChange, handleImageUpload, etc.) remain the same
+
+  const handleNextStep = () => {
+    // Add validation for each step before moving forward
+    switch (currentStep) {
+      case 1:
+        // Validate basic information
+        if (!formData.bureauName || !formData.ownerName || !formData.creatingDate) {
+          alert("Please fill in all required basic information");
+          return;
+        }
+        break;
+      case 2:
+        // Validate contact information
+        if (!formData.countryCode || !formData.mobileNumber || !formData.email) {
+          alert("Please fill in all required contact information");
+          return;
+        }
+        break;
+      case 3:
+        // Validate images (optional)
+        break;
+      default:
+        break;
+    }
+
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Basic Information</h3>
+            <label className="block text-gray-700">Bureau Name</label>
+            <input 
+              type="text" 
+              name="bureauName" 
+              placeholder="Bureau Name" 
+              value={formData.bureauName} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+            
+            <label className="block text-gray-700">Owner Name</label>
+            <input 
+              type="text" 
+              name="ownerName" 
+              placeholder="Owner Name" 
+              value={formData.ownerName} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+            
+            <label className="block text-gray-700">Creating Date</label>
+            <input 
+              type="date" 
+              name="creatingDate" 
+              value={formData.creatingDate} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Contact Information</h3>
+            <label className="block text-gray-700">Country Code</label>
+            <input 
+              type="text" 
+              name="countryCode" 
+              placeholder="Country Code" 
+              value={formData.countryCode} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+            
+            <label className="block text-gray-700">Mobile Number</label>
+            <input 
+              type="tel" 
+              name="mobileNumber" 
+              placeholder="Mobile Number" 
+              value={formData.mobileNumber} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+            
+            <label className="block text-gray-700">Email</label>
+            <input 
+              type="email" 
+              name="email" 
+              placeholder="Email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+            
+            <label className="block text-gray-700">Create Password</label>
+            <input 
+              type="password" 
+              name="password" 
+              placeholder="Create Password" 
+              value={formData.password} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-3 border rounded-lg mb-4" 
+            />
+          </div>
+        );
+      
+      case 3:
+        return (
+          <div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Images & Banners</h3>
+            {/* Existing image upload sections */}
+            <div className="mb-4 p-4 border rounded-lg bg-gray-100">
+              <h4 className="font-semibold mb-2">Owner/Profile Image</h4>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => handleImageUpload(e, 'ownerImage')} 
+                className="w-full p-2 mb-2"
+              />
+              {ownerImagePreview && (
+                <div className="mt-2">
+                  <img src={ownerImagePreview} alt="Owner Preview" className="h-32 object-cover rounded" />
+                </div>
+              )}
+            </div>
+            {/* Add other image upload sections from the original component */}
+          </div>
+        );
+      
+      case 4:
+        return (
+          <div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Additional Details</h3>
+            {/* Office Addresses */}
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2">Office Addresses</h4>
+              {formData.officeAddresses.map((address, index) => (
+                <div key={index} className="mb-4 p-4 border rounded-lg bg-gray-100">
+                  <input
+                    type="text"
+                    name="BranchManagerName"
+                    placeholder="Branch Manager Name"
+                    value={address.BranchManagerName}
+                    onChange={(e) => handleAddressChange(index, e)}
+                    className="w-full p-2 border rounded-lg mb-2"
+                  />
+                  {/* Add other address fields */}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={addLocation} 
+                className="w-full bg-blue-600 text-white p-3 rounded-lg mb-4"
+              >
+                Add More Locations
+              </button>
+            </div>
+
+            {/* Social Media Links */}
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2">Youtube Links</h4>
+              {formData.socialMediaLinks.map((link, index) => (
+                <div key={index} className="mb-4 p-4 border rounded-lg bg-gray-100">
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="Title Name"
+                    value={link.title}
+                    onChange={(e) => handleSocialMediaChange(index, e)}
+                    className="w-full p-3 border rounded-lg mb-2"
+                  />
+                  <input
+                    type="url"
+                    name="url"
+                    placeholder="URL Link"
+                    value={link.url}
+                    onChange={(e) => handleSocialMediaChange(index, e)}
+                    className="w-full p-3 border rounded-lg mb-2"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Existing submit logic remains the same
+      // ... (previous handleSubmit code)
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Network error or CORS issue. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg mt-10">
+      <h2 className="text-3xl font-semibold text-center text-gray-700 mb-6">Create Bureau</h2>
+      
+      {/* Step Indicator */}
+      <div className="flex justify-center mb-6">
+        {[1, 2, 3, 4].map((step) => (
+          <div 
+            key={step} 
+            className={`w-10 h-10 mx-2 flex items-center justify-center rounded-full ${
+              currentStep === step 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            {step}
+          </div>
+        ))}
+      </div>
+
+      {loading && <Loader />}
+      
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
+        {/* Dynamic Step Content */}
+        {renderStepContent()}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-6">
+          {currentStep > 1 && (
+            <button 
+              type="button" 
+              onClick={handlePreviousStep} 
+              className="bg-gray-300 text-gray-700 py-3 px-6 rounded-lg"
+            >
+              Previous
+            </button>
+          )}
+          
+          {currentStep < 4 ? (
+            <button 
+              type="button" 
+              onClick={handleNextStep} 
+              className="bg-indigo-600 text-white py-3 px-6 rounded-lg ml-auto"
+            >
+              Next
+            </button>
+          ) : (
+            <button 
+              type="submit" 
+              className="bg-green-600 text-white py-3 px-6 rounded-lg ml-auto"
+            >
+              {loading ? "Creating..." : "Create Bureau"}
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CreateBureau;

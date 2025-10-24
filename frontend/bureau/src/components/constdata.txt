@@ -1,0 +1,18 @@
+
+
+
+
+
+        {/* Helmet for Meta Tags */}
+        <Helmet>
+        <title>{`Profile of ${profile.fullName}`}</title>
+        <meta name="description" content={`Check out the profile of ${profile.fullName} on our platform.`} />
+        <meta property="og:title" content={`Profile of ${profile.fullName}`} />
+        <meta property="og:description" content="Explore the details and connect now!" />
+        <meta property="og:image" content={`${Uploads}/${profile.image}`} />
+        <meta property="og:url" content={window.location.href} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`Profile of ${profile.fullName}`} />
+        <meta name="twitter:description" content="Explore the details and connect now!" />
+        <meta name="twitter:image" content={`${Uploads}/${profile.image}`} />
+      </Helmet>

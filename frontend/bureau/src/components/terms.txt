@@ -1,0 +1,242 @@
+import React, { useState, useEffect, useRef } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import apiClient, { apiEndpoints } from "./Apis";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const TermsAndConditionsEditor = () => {
+  const [content, setContent] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [bureauId, setBureauId] = useState(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const quillRef = useRef(null);
+
+  // Fetch bureau ID from localStorage
+  useEffect(() => {
+    const storedBureauId = localStorage.getItem("bureauId");
+    if (storedBureauId) {
+      // Ensure bureauId is converted to a string for consistent comparison
+      setBureauId(String(storedBureauId));
+    }
+  }, []);
+
+  // Fetch terms from backend when bureauId is available
+  useEffect(() => {
+    const fetchTerms = async () => {
+      if (bureauId) {
+        try {
+          setIsLoading(true);
+          const response = await apiClient.get(apiEndpoints.terms);
+          
+          // Convert bureau_id to string for consistent comparison
+          const bureauTerms = response.data.find(
+            term => String(term.bureau_id) === String(bureauId)
+          );
+
+          if (bureauTerms) {
+            setContent(bureauTerms.term || '');
+            setIsSaved(true);
+          } else {
+            setContent('');
+            setIsSaved(false);
+          }
+        } catch (error) {
+          console.error("Error fetching terms:", error);
+          toast.error('Failed to fetch terms');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchTerms();
+  }, [bureauId]);
+  
+  // Save terms to backend
+  const handleSaveTerms = async () => {
+    if (!bureauId) {
+      toast.error('No active bureau found');
+      return;
+    }
+
+    // Trim content to remove any empty paragraphs
+    const trimmedContent = content.replace(/<p>\s*<\/p>/g, '').trim();
+
+    try {
+      setIsLoading(true);
+      await apiClient.put(`${apiEndpoints.terms}/${bureauId}`, { term: trimmedContent });
+      setIsSaved(true);
+      setIsEditing(false);
+      toast.success('Terms updated successfully!');
+    } catch (error) {
+      console.error('Error saving terms:', error);
+      toast.error('Failed to save terms');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear saved terms
+  const handleClearTerms = async () => {
+    if (bureauId) {
+      try {
+        setIsLoading(true);
+        await apiClient.put(`${apiEndpoints.terms}/${bureauId}`, { term: '' });
+        setContent('');
+        setIsSaved(false);
+        toast.success('Terms cleared successfully!');
+      } catch (error) {
+        console.error('Error clearing terms:', error);
+        toast.error('Failed to clear terms');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // If no bureau is active, show login/selection prompt
+  if (!bureauId) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <h2 className="text-xl mb-4">No Active Bureau</h2>
+          <p className="mb-4">Please log in or select a bureau to edit terms.</p>
+          <button 
+            onClick={() => {
+              localStorage.setItem('bureauId', 'sample-bureau-id');
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Select Bureau (Demo)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6 bg-gray-50 min-h-screen">
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000} 
+        hideProgressBar={false} 
+        closeOnClick 
+        pauseOnHover 
+      />
+      <div className="bg-white shadow-md rounded-lg p-4 md:p-6">
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Terms and Conditions
+        </h1>
+
+        {/* Status Indicator */}
+        {!isEditing && (
+          <div className={`mb-4 p-2 rounded text-center ${isSaved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            {isSaved 
+              ? `Terms are saved for Bureau: ${bureauId}` 
+              : 'No terms have been saved yet'}
+          </div>
+        )}
+
+        {/* Loading Spinner */}
+        {isLoading && (
+          <div className="flex justify-center items-center mb-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+
+        {/* Editor */}
+        <div className={`border-0 md:border rounded ${isEditing ? 'md:border-blue-500' : 'md:border-gray-300'}`}>
+          {isEditing ? (
+            <ReactQuill 
+              ref={quillRef}
+              value={content}
+              onChange={setContent}
+              modules={{
+                toolbar: [
+                  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                  ['bold', 'italic', 'underline', 'strike'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  [{ 'script': 'sub'}, { 'script': 'super' }],
+                  [{ 'indent': '-1'}, { 'indent': '+1' }],
+                  [{ 'direction': 'rtl' }],
+                  [{ 'color': [] }, { 'background': [] }],
+                  [{ 'font': [] }],
+                  [{ 'align': [] }],
+                  ['link', 'image', 'video'],
+                  ['clean']
+                ]
+              }}
+              formats={[
+                'header',
+                'bold', 'italic', 'underline', 'strike',
+                'list', 'bullet',
+                'script',
+                'indent',
+                'direction',
+                'color', 'background',
+                'font',
+                'align',
+                'link', 'image', 'video'
+              ]}
+              theme="snow"
+              className="h-[300px] md:h-[500px]"
+            />
+          ) : (
+            <div 
+              className="p-4 min-h-[300px] md:min-h-[500px] overflow-auto"
+              dangerouslySetInnerHTML={{ __html: content || '<p>No terms and conditions</p>' }}
+            />
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-4 mt-4">
+          {!isEditing ? (
+            <>
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="w-full md:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                disabled={isLoading}
+              >
+                Edit Terms
+              </button>
+              {content && (
+                <button 
+                  onClick={handleClearTerms}
+                  className="w-full md:w-auto px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  Clear Terms
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => {
+                  setIsEditing(false);
+                }}
+                className="w-full md:w-auto px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveTerms}
+                className="w-full md:w-auto px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                disabled={isLoading}
+              >
+                Save Changes
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TermsAndConditionsEditor;

@@ -1,0 +1,87 @@
+      
+        
+        .card {
+  width: 35%; /* 3 cards per row on mobile */
+  padding-right: 1.5rem; /* spacing between cards */
+  box-sizing: border-box;
+ 
+}
+
+.card img {
+  width: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+        .card img {
+  height: 190px;
+}
+
+
+/* small screens: less than 425px */
+@media (max-width: 640px) {
+  /* .card {
+    height: 100px; 
+  } */
+  .card img {
+    height: 100px; 
+  }
+}
+
+        /* tablet: 3 cards per row */
+        @media (min-width: 640px) {
+           .card {
+            width: 25%;
+          }
+        }
+
+        /* desktop: 4 cards per row */
+        @media (min-width: 1024px) {
+          .card {
+            width: 25%;
+          }
+        }
+
+
+        .button-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto; /* horizontal scroll on small screens */
+  flex-wrap: nowrap; /* prevent wrapping */
+}
+
+/* Each button wrapper */
+.button-container > * {
+  flex-shrink: 0; /* prevent shrinking */
+}
+
+/* Small screens: <425px, show only first button fully */
+@media (max-width: 425px) {
+  .button-container > *:not(:first-child) {
+    display: none; /* hide all buttons except first */
+  }
+}
+
+/* Small tablets: 426px - 639px, maybe 2 buttons visible */
+@media (min-width: 426px) and (max-width: 639px) {
+  .button-container > * {
+    min-width: 45%; /* show 2 buttons partially/fully */
+  }
+}
+
+/* Tablets: 640px - 1023px, 3 buttons visible */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .button-container > * {
+    min-width: 30%;
+  }
+}
+
+/* Desktop: 1024px+, all buttons visible */
+@media (min-width: 1024px) {
+  .button-container > * {
+    min-width: auto; /* default width */
+  }
+}
+
