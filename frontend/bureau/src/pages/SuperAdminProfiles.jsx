@@ -54,7 +54,7 @@ const SuperAdminProfiles = () => {
           const users = gender.toLowerCase() === 'male'
             ? bureau.maleUsers || []
             : bureau.femaleUsers || [];
-
+ 
           // Add bureau details to each user
           return users.map(user => ({
             ...user,

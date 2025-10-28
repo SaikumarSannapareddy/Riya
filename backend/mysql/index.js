@@ -370,7 +370,7 @@ app.get('/api/bureau_profiles', (req, res) => {
   // Query to get all records from bureau_profiles and join with profiles table for profile images
   const query = `
     SELECT 
-      bp.*,
+      bp.*, 
       p.profile_img 
     FROM bureau_profiles bp
     LEFT JOIN profiles p ON bp.bureauId = p.bureau_id
@@ -378,6 +378,7 @@ app.get('/api/bureau_profiles', (req, res) => {
   `;
   
   db.query(query, (err, results) => {
+    console.log("images",results)
     if (err) {
       console.error('Database query error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });

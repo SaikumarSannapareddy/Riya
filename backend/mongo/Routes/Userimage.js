@@ -18,7 +18,15 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // Increase limit to 50MB
+  fileFilter: (req, file, cb) => {
+    console.log("File Received:", file);
+    cb(null, true);
+  }
+});
+
 
 // Image upload endpoint
 router.put("/update-image/:userId", upload.single("image"), async (req, res) => {
@@ -60,3 +68,5 @@ router.put("/update-image/:userId", upload.single("image"), async (req, res) => 
 });
 
 module.exports = router;
+
+

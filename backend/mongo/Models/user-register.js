@@ -5,15 +5,18 @@ const { Schema } = mongoose;
 // Define the merged User schema with LocationDetails schema fields added
 const userSchema = new Schema(
   {
-    
+      
     // General User Information
     gender: { type: String, required: false },
     createdBy: { type: String, required: false },
+    activeStatus: { type: Boolean, default: false },
     paymentStatus: { type: String, required: false },
     image: { type: String, required: false }, // Assuming image URL will be stored as a string
     imagePrivacy: { type: String, required: false },
     countryCode: { type: String, required: false },
     mobileNumber: { type: String, required: false },
+    deletereason: { type: String, required: false },
+    suspendreason: { type: String, required: false },
     email: { type: String, required: false, default: null, unique: false },
     gallery: { type: [String], default: [] }, // Array of image paths
     
@@ -22,6 +25,8 @@ const userSchema = new Schema(
     martialId: { type: String, required: false },
     profileStatus: { type: String, required: false },
     servicePreference: { type: String, required: false },
+    visibleToAll: { type: String, required: false, default:"true" },
+    showOtherProfiles: { type: String, required: false, default:"true" },
 
     step1: { type: String, required: false },
     step2: { type: String, required: false },
@@ -97,7 +102,7 @@ const userSchema = new Schema(
       required: false,
     },
     languagesKnown: {
-      type: [String],
+      type: [String], 
  
       required: false,
     },
@@ -214,12 +219,17 @@ const userSchema = new Schema(
     },
     familyValue: {
       type: String,
-      enum: ["orthodox", "traditional"],
+      enum: ["orthodox", "traditional", "moderate", "liberal", "add_another"],
       required: false,
     },
     familyType: {
       type: String,
       enum: ["joint", "nuclear"],
+      required: false,
+    },
+    familyStatus: {
+      type: String,
+      enum: ["poor_family", "middle_class", "upper_middle_class", "rich_family", "ias_family", "ips_family"],
       required: false,
     },
     originalLocation: {
@@ -234,6 +244,7 @@ const userSchema = new Schema(
     // Family Property Details (from your earlier schema)
     houseType: { type: String, required: false },
     houseSqFeet: { type: Number, required: false },
+    status: { type: String, required: false, default: 0 },
     houseValue: { type: Number, required: false },
     monthlyRent: { type: Number, required: false },
     houseLocation: { type: [String], required: false },
@@ -292,10 +303,22 @@ const userSchema = new Schema(
     cityLocationPreferences : { type: [String], required: false },
     citizenshipPreferences : { type: [String], required: false },
 
+    profileCompletion: { type: Number, default: 0 },
+
+
+    // Don't show again functionality - array of bureau IDs
+    dontshowagain: { type: [String], default: [] },
+
+    // Custom words from Step10
+    customWords: { type: [String], default: [] },
+
+    // Profile views counter
+    views: { type: Number, default: 0, min: 0 },
+
   },
   { timestamps: true }
 );
-
+ 
 // Create the User model with the merged schema
 const User = mongoose.model("User", userSchema);
 
